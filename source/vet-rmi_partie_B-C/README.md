@@ -10,6 +10,15 @@ Le projet couvre les fonctionnalités demandées dans le sujet, notamment la ges
 
 ---
 
+## 0. Prérequis
+
+* **JDK** : 17 minimum. Version testée sur ce projet : openjdk 21.0.12.1 2026-08-18.
+* **Maven** : 3.6.3 minimum. Version testée : Apache Maven 3.8.7.
+* **Spring Boot** : version épinglée dans `vet-rmi/pom.xml`.
+* **Environnement de développement utilisé** : Visual Studio Code
+
+---
+
 ## 1. Évolution par rapport à la version classique
 
 La première version du projet reposait uniquement sur les mécanismes standards de Java :
@@ -198,3 +207,59 @@ Spring Boot
 ```
 
 Le cœur du système reste donc distribué avec **RMI**, tandis que Spring Boot est utilisé pour structurer et démarrer les applications serveur et cliente.
+
+---
+
+## 6. Compilation et lancement
+
+Tout se construit depuis la racine du projet Maven multi modules :
+
+```bash
+cd vet-rmi
+mvn clean install
+```
+
+L'ordre de construction est automatique : `vet-common`, puis `vet-server` et `vet-client` qui en dépendent. Chaque module produit un JAR exécutable dans son dossier `target/`.
+
+Les processus doivent être démarrés **dans cet ordre**, chacun dans son propre terminal, depuis la racine `vet-rmi` :
+
+```bash
+# terminal 1, le serveur : crée le registre RMI et publie le cabinet
+mvn -pl vet-server spring-boot:run
+
+# terminal 2 et suivants, un ou plusieurs clients
+mvn -pl vet-client spring-boot:run -Dspring-boot.run.jvmArguments="-Djava.awt.headless=false"
+```
+
+L'argument `-Djava.awt.headless=false` est nécessaire dès le premier lancement du client : le mode headless de la JVM est décidé avant que Spring ne lise `application.properties`, donc le seul réglage de cette propriété dans le fichier ne suffit pas à ouvrir l'interface graphique, une `java.awt.HeadlessException` apparaît sinon dans la console. Pour ouvrir un second client (par exemple pour tester les alertes avec deux vétérinaires), relancez la même commande dans un nouveau terminal.
+
+Depuis un IDE, il suffit d'exécuter `ServerApplication`, puis `ClientApplication` (autant de fois que de clients souhaités), dans le même ordre, en ajoutant `-Djava.awt.headless=false` aux options VM du lancement du client.
+
+### Arrêt propre
+
+Fermer la fenêtre du client (ou choisir l'option de sortie si la console est utilisée) désabonne proprement l'observateur du vétérinaire s'il était abonné aux alertes, puis termine le processus. Le serveur, lui, reste actif tant qu'il n'est pas arrêté manuellement (`Ctrl+C` dans son terminal).
+
+---
+
+## 7. Configuration et ports utilisés
+
+Les paramètres de connexion sont externalisés dans les fichiers `application.properties` de chaque module plutôt qu'écrits en dur :
+
+| Propriété                 | Rôle                              | Valeur par défaut     |
+| -------------------------- | ---------------------------------- | ---------------------- |
+| `vet.rmi.port`             | port du registre RMI               | `1099`                  |
+| `vet.rmi.service-name`     | nom sous lequel le cabinet est publié | `CabinetVeterinaire`  |
+| `vet.rmi.host` (client)    | hôte du serveur à contacter        | `localhost`             |
+
+Le registre RMI est créé par le serveur au démarrage (`LocateRegistry.createRegistry`) : il n'est pas nécessaire de lancer `rmiregistry` séparément. Pour lancer un client contre un serveur distant, surchargez `vet.rmi.host` au lancement, par exemple :
+
+```bash
+mvn -pl vet-client spring-boot:run \
+    -Dspring-boot.run.jvmArguments="-Djava.awt.headless=false -Dvet.rmi.host=192.168.1.10"
+```
+
+---
+
+## 8. Version Java RMI classique (partie A)
+
+Ce README ne couvre que cette version Spring Boot et Swing. La version initiale en Java RMI pur, sans framework, vit dans un dossier séparé du dépôt et possède son propre README avec ses propres instructions de compilation et de lancement.
