@@ -1,0 +1,15 @@
+# Compilation Java
+out/
+bin/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Divers
+.DS_Store

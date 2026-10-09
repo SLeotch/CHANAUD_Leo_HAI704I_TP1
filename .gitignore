@@ -1,0 +1,18 @@
+# Maven (partie B/C)
+target/
+
+# Java RMI vanilla (partie A)
+out/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
